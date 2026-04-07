@@ -9,23 +9,48 @@
 </head>
 <body>
 
+  <!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BankFlow</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
   <header>
     <h1>BankFlow</h1>
     <p>Симулятор банковского оператора</p>
+
+    <button id="startBtn">Старт</button>
+    <button id="pauseBtn">Пауза</button>
   </header>
 
   <main>
+
     <section>
-      <h2>Очередь</h2>
+      <h2>Очередь клиентов</h2>
+      <div id="queueList"></div>
     </section>
 
     <section>
-      <h2>Обслуживание</h2>
+      <h2>Текущее обслуживание</h2>
+      <div id="clientPanel">Нет клиента</div>
     </section>
 
     <section>
       <h2>Операции</h2>
+      <button data-op="withdraw">Снятие</button>
+      <button data-op="deposit">Пополнение</button>
+      <button data-op="loan">Кредит</button>
     </section>
+
+    <section>
+      <h2>Статистика</h2>
+      <p>Очки: <span id="score">0</span></p>
+    </section>
+
   </main>
 
   <script src="script.js"></script>
