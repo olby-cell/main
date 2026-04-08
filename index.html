@@ -18,10 +18,12 @@
         <span>Статус</span>
         <strong id="gameStatus">Пауза</strong>
       </div>
+
       <div class="stat-chip">
         <span>Время</span>
         <strong id="simTime">0</strong>
       </div>
+
       <div class="stat-chip">
         <span>Скорость</span>
         <select id="speedSelect">
@@ -30,6 +32,7 @@
           <option value="3">x3</option>
         </select>
       </div>
+
       <button id="startBtn" class="primary">Старт</button>
       <button id="pauseBtn">Пауза</button>
       <button id="resetBtn" class="danger">Сброс</button>
@@ -45,6 +48,7 @@
           <span>Макс: <strong id="maxQueue">0</strong></span>
         </div>
       </div>
+
       <div id="queueList" class="queue-list"></div>
       <p class="card-note">Если терпение клиента закончится, он уйдёт из банка.</p>
     </section>
@@ -87,22 +91,27 @@
           <span>Снятие</span>
           <small>Выдать наличные</small>
         </button>
+
         <button class="action-btn" data-op="deposit">
           <span>Пополнение</span>
           <small>Принять деньги</small>
         </button>
+
         <button class="action-btn" data-op="loan">
           <span>Кредит</span>
           <small>Оформить кредит</small>
         </button>
+
         <button class="action-btn" data-op="savings">
           <span>Вклад</span>
           <small>Открыть вклад</small>
         </button>
+
         <button class="action-btn" data-op="fx">
           <span>Обмен</span>
           <small>Обмен валют</small>
         </button>
+
         <button class="action-btn" data-op="balance">
           <span>Баланс</span>
           <small>Проверка счёта</small>
@@ -122,22 +131,27 @@
           <span>Пришло</span>
           <strong id="arrivedCount">0</strong>
         </div>
+
         <div class="info-box">
           <span>Успешно</span>
           <strong id="servedCount">0</strong>
         </div>
+
         <div class="info-box">
           <span>Провалено</span>
           <strong id="failedCount">0</strong>
         </div>
+
         <div class="info-box">
           <span>Ушли</span>
           <strong id="leftCount">0</strong>
         </div>
+
         <div class="info-box">
           <span>Среднее ожидание</span>
           <strong id="avgWait">0.0</strong>
         </div>
+
         <div class="info-box">
           <span>Рейтинг</span>
           <strong id="rating">100%</strong>
@@ -149,35 +163,11 @@
       <div class="card-head">
         <h2>Журнал событий</h2>
       </div>
+
       <div id="logList" class="log-list"></div>
     </section>
   </main>
 
   <script src="./js/script.js"></script>
-</body>
-</html>
-          <span>Ушли</span>
-          <strong id="leftCount">0</strong>
-        </div>
-        <div class="info-box">
-          <span>Среднее ожидание</span>
-          <strong id="avgWait">0.0</strong>
-        </div>
-        <div class="info-box">
-          <span>Рейтинг</span>
-          <strong id="rating">100%</strong>
-        </div>
-      </div>
-    </section>
-
-    <section class="card log-card">
-      <div class="card-head">
-        <h2>Журнал событий</h2>
-      </div>
-      <div id="logList" class="log-list"></div>
-    </section>
-  </main>
-
-  <script src="./script.js"></script>
 </body>
 </html>
