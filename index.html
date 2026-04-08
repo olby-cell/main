@@ -1,58 +1,158 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BankFlow</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
+  <header class="topbar">
+    <div>
+      <h1>BankFlow</h1>
+      <p class="subtitle">Симулятор банковского оператора</p>
+    </div>
 
-  <!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BankFlow</title>
-  <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-
-  <header>
-    <h1>BankFlow</h1>
-    <p>Симулятор банковского оператора</p>
-
-    <button id="startBtn">Старт</button>
-    <button id="pauseBtn">Пауза</button>
+    <div class="top-controls">
+      <div class="stat-chip">
+        <span>Статус</span>
+        <strong id="gameStatus">Пауза</strong>
+      </div>
+      <div class="stat-chip">
+        <span>Время</span>
+        <strong id="simTime">0</strong>
+      </div>
+      <div class="stat-chip">
+        <span>Скорость</span>
+        <select id="speedSelect">
+          <option value="1">x1</option>
+          <option value="2">x2</option>
+          <option value="3">x3</option>
+        </select>
+      </div>
+      <button id="startBtn" class="primary">Старт</button>
+      <button id="pauseBtn">Пауза</button>
+      <button id="resetBtn" class="danger">Сброс</button>
+    </div>
   </header>
 
-  <main>
-
-    <section>
-      <h2>Очередь клиентов</h2>
-      <div id="queueList"></div>
+  <main class="dashboard">
+    <section class="card queue-card">
+      <div class="card-head">
+        <h2>Очередь клиентов</h2>
+        <div class="mini-stats">
+          <span>Сейчас: <strong id="queueCount">0</strong></span>
+          <span>Макс: <strong id="maxQueue">0</strong></span>
+        </div>
+      </div>
+      <div id="queueList" class="queue-list"></div>
+      <p class="card-note">Если терпение клиента закончится, он уйдёт из банка.</p>
     </section>
 
-    <section>
-      <h2>Текущее обслуживание</h2>
-      <div id="clientPanel">Нет клиента</div>
+    <section class="card service-card">
+      <div class="card-head">
+        <h2>Текущее окно обслуживания</h2>
+        <div class="mini-stats">
+          <span>Ошибки: <strong id="mistakes">0</strong></span>
+        </div>
+      </div>
+
+      <div id="clientPanel" class="client-panel empty">
+        <div class="empty-title">Нет клиента у окна</div>
+        <div class="empty-text">Нажмите «Старт», чтобы начать симуляцию.</div>
+      </div>
+
+      <div class="timers">
+        <div class="timer-box">
+          <span>Время на выбор</span>
+          <strong id="decisionTimer">—</strong>
+        </div>
+        <div class="timer-box">
+          <span>Обслуживание</span>
+          <strong id="serviceTimer">—</strong>
+        </div>
+      </div>
     </section>
 
-    <section>
-      <h2>Операции</h2>
-      <button data-op="withdraw">Снятие</button>
-      <button data-op="deposit">Пополнение</button>
-      <button data-op="loan">Кредит</button>
+    <section class="card actions-card">
+      <div class="card-head">
+        <h2>Операции</h2>
+        <div class="mini-stats">
+          <span>Очки: <strong id="score">0</strong></span>
+        </div>
+      </div>
+
+      <div class="actions-grid">
+        <button class="action-btn" data-op="withdraw">
+          <span>Снятие</span>
+          <small>Выдать наличные</small>
+        </button>
+        <button class="action-btn" data-op="deposit">
+          <span>Пополнение</span>
+          <small>Принять деньги</small>
+        </button>
+        <button class="action-btn" data-op="loan">
+          <span>Кредит</span>
+          <small>Оформить кредит</small>
+        </button>
+        <button class="action-btn" data-op="savings">
+          <span>Вклад</span>
+          <small>Открыть вклад</small>
+        </button>
+        <button class="action-btn" data-op="fx">
+          <span>Обмен</span>
+          <small>Обмен валют</small>
+        </button>
+        <button class="action-btn" data-op="balance">
+          <span>Баланс</span>
+          <small>Проверка счёта</small>
+        </button>
+      </div>
+
+      <p class="card-note">Нужно нажать правильную операцию, пока не истёк таймер.</p>
     </section>
 
-    <section>
-      <h2>Статистика</h2>
-      <p>Очки: <span id="score">0</span></p>
+    <section class="card stats-card">
+      <div class="card-head">
+        <h2>Статистика</h2>
+      </div>
+
+      <div class="stats-grid">
+        <div class="info-box">
+          <span>Пришло</span>
+          <strong id="arrivedCount">0</strong>
+        </div>
+        <div class="info-box">
+          <span>Успешно</span>
+          <strong id="servedCount">0</strong>
+        </div>
+        <div class="info-box">
+          <span>Провалено</span>
+          <strong id="failedCount">0</strong>
+        </div>
+        <div class="info-box">
+          <span>Ушли</span>
+          <strong id="leftCount">0</strong>
+        </div>
+        <div class="info-box">
+          <span>Среднее ожидание</span>
+          <strong id="avgWait">0.0</strong>
+        </div>
+        <div class="info-box">
+          <span>Рейтинг</span>
+          <strong id="rating">100%</strong>
+        </div>
+      </div>
     </section>
 
+    <section class="card log-card">
+      <div class="card-head">
+        <h2>Журнал событий</h2>
+      </div>
+      <div id="logList" class="log-list"></div>
+    </section>
   </main>
 
-  <script src="script.js"></script>
+  <script src="./script.js"></script>
 </body>
 </html>
