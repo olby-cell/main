@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BankFlow</title>
-  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./css/styles.css" />
 </head>
 <body>
   <header class="topbar">
@@ -131,6 +131,31 @@
           <strong id="failedCount">0</strong>
         </div>
         <div class="info-box">
+          <span>Ушли</span>
+          <strong id="leftCount">0</strong>
+        </div>
+        <div class="info-box">
+          <span>Среднее ожидание</span>
+          <strong id="avgWait">0.0</strong>
+        </div>
+        <div class="info-box">
+          <span>Рейтинг</span>
+          <strong id="rating">100%</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="card log-card">
+      <div class="card-head">
+        <h2>Журнал событий</h2>
+      </div>
+      <div id="logList" class="log-list"></div>
+    </section>
+  </main>
+
+  <script src="./js/script.js"></script>
+</body>
+</html>
           <span>Ушли</span>
           <strong id="leftCount">0</strong>
         </div>
