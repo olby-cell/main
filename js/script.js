@@ -10,99 +10,163 @@ const queueListEl = document.getElementById("queueList");
 const clientPanelEl = document.getElementById("clientPanel");
 const logListEl = document.getElementById("logList");
 
+const arrivedCountEl = document.getElementById("arrivedCount");
+const servedCountEl = document.getElementById("servedCount");
+const failedCountEl = document.getElementById("failedCount");
+const leftCountEl = document.getElementById("leftCount");
+const avgWaitEl = document.getElementById("avgWait");
+const ratingEl = document.getElementById("rating");
+
 const startBtn = document.getElementById("startBtn");
 const pauseBtn = document.getElementById("pauseBtn");
 const resetBtn = document.getElementById("resetBtn");
 const actionButtons = document.querySelectorAll(".action-btn");
 
-const names = ["Иван", "Анна", "Сергей", "Мария", "Олег", "Елена", "Максим", "Виктория"];
-const operations = {
-  withdraw: "Снятие",
-  deposit: "Пополнение",
-  loan: "Кредит",
-  savings: "Вклад",
-  fx: "Обмен",
-  balance: "Баланс"
+const CLIENT_NAMES = [
+  "Иван Петров", "Анна Соколова", "Дмитрий Орлов", "Мария Коваль",
+  "Алексей Романюк", "Ольга Новик", "Сергей Мельник", "Елена Васильева"
+];
+
+const OPERATIONS = {
+  withdraw: {
+    title: "Снятие",
+    request: (amount) => `Клиент хочет снять ${amount} ₽`
+  },
+  deposit: {
+    title: "Пополнение",
+    request: (amount) => `Клиент хочет пополнить счёт на ${amount} ₽`
+  },
+  loan: {
+    title: "Кредит",
+    request: (amount) => `Клиент хочет оформить кредит на ${amount} ₽`
+  },
+  savings: {
+    title: "Вклад",
+    request: (amount) => `Клиент хочет открыть вклад на ${amount} ₽`
+  },
+  fx: {
+    title: "Обмен",
+    request: (amount, currency) => `Клиент хочет обменять ${amount} ${currency}`
+  },
+  balance: {
+    title: "Баланс",
+    request: () => `Клиент хочет проверить баланс счёта`
+  }
 };
 
-let gameRunning = false;
-let simTime = 0;
-let timerId = null;
+const CURRENCIES = ["USD", "EUR", "GBP"];
 
-let queue = [];
-let currentClient = null;
-let maxQueue = 0;
-let nextId = 1;
+const state = {
+  running: false,
+  simTime: 0,
+  queue: [],
+  currentClient: null,
+  nextId: 1,
+  maxQueue: 0,
+  spawnCooldown: 0,
 
-let score = 0;
-let mistakes = 0;
+  score: 0,
+  mistakes: 0,
+  arrived: 0,
+  served: 0,
+  failed: 0,
+  left: 0,
+  totalWait: 0,
 
-function randomItem(arr) {
-  return arr[Math.floor(Math.random() * arr.length)];
+  intervalId: null
+};
+
+function randomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function randomOperation() {
-  return randomItem(Object.keys(operations));
+function pickRandom(arr) {
+  return arr[randomInt(0, arr.length - 1)];
 }
 
 function createClient() {
-  const operation = randomOperation();
+  const operation = pickRandom(Object.keys(OPERATIONS));
+  const status = Math.random() < 0.1 ? "VIP" : Math.random() < 0.25 ? "Премиум" : "Обычный";
 
-  return {
-    id: nextId++,
-    name: randomItem(names),
+  const client = {
+    id: state.nextId++,
+    name: pickRandom(CLIENT_NAMES),
     operation,
-    amount: Math.floor(Math.random() * 9000) + 1000,
-    status: "Обычный",
-    patience: Math.floor(Math.random() * 8) + 8,
-    decisionTime: Math.floor(Math.random() * 5) + 5
+    status,
+    createdAt: state.simTime,
+    patience: status === "VIP" ? randomInt(16, 22) : randomInt(10, 18),
+    decisionTime: status === "VIP" ? randomInt(8, 12) : randomInt(6, 10),
+    amount: null,
+    currency: null
   };
+
+  if (operation !== "balance") {
+    if (operation === "fx") {
+      client.amount = randomInt(100, 3000);
+      client.currency = pickRandom(CURRENCIES);
+    } else if (operation === "loan") {
+      client.amount = randomInt(5000, 150000);
+    } else if (operation === "savings") {
+      client.amount = randomInt(1000, 50000);
+    } else {
+      client.amount = randomInt(100, 20000);
+    }
+  }
+
+  return client;
 }
 
-function getRequestText(client) {
-  switch (client.operation) {
-    case "withdraw":
-      return `Хочет снять ${client.amount} ₽`;
-    case "deposit":
-      return `Хочет пополнить счёт на ${client.amount} ₽`;
-    case "loan":
-      return `Хочет оформить кредит на ${client.amount} ₽`;
-    case "savings":
-      return `Хочет открыть вклад на ${client.amount} ₽`;
-    case "fx":
-      return `Хочет обменять ${client.amount} USD`;
-    case "balance":
-      return "Хочет проверить баланс";
-    default:
-      return "Неизвестный запрос";
+function getClientRequestText(client) {
+  if (!client) return "";
+  if (client.operation === "fx") {
+    return OPERATIONS[client.operation].request(client.amount, client.currency);
   }
+  if (client.operation === "balance") {
+    return OPERATIONS[client.operation].request();
+  }
+  return OPERATIONS[client.operation].request(client.amount);
 }
 
 function addLog(text, type = "") {
   const item = document.createElement("div");
   item.className = `log-item ${type}`.trim();
-  item.textContent = `[${simTime}s] ${text}`;
+  item.textContent = `[${state.simTime}s] ${text}`;
   logListEl.prepend(item);
+
+  while (logListEl.children.length > 40) {
+    logListEl.removeChild(logListEl.lastChild);
+  }
 }
 
 function updateStats() {
-  gameStatusEl.textContent = gameRunning ? "Работа" : "Пауза";
-  simTimeEl.textContent = simTime;
-  queueCountEl.textContent = queue.length;
-  maxQueueEl.textContent = maxQueue;
-  mistakesEl.textContent = mistakes;
-  scoreEl.textContent = score;
+  gameStatusEl.textContent = state.running ? "Работа" : "Пауза";
+  simTimeEl.textContent = state.simTime;
+  queueCountEl.textContent = state.queue.length;
+  maxQueueEl.textContent = state.maxQueue;
+  mistakesEl.textContent = state.mistakes;
+  scoreEl.textContent = state.score;
+
+  arrivedCountEl.textContent = state.arrived;
+  servedCountEl.textContent = state.served;
+  failedCountEl.textContent = state.failed;
+  leftCountEl.textContent = state.left;
+
+  avgWaitEl.textContent = state.served === 0 ? "0.0" : (state.totalWait / state.served).toFixed(1);
+
+  const total = state.served + state.failed + state.left;
+  const rating = total === 0 ? 100 : Math.round((state.served / total) * 100);
+  ratingEl.textContent = `${rating}%`;
 }
 
 function renderQueue() {
   queueListEl.innerHTML = "";
 
-  if (queue.length === 0) {
+  if (state.queue.length === 0) {
     queueListEl.innerHTML = `
       <div class="queue-item">
         <div class="queue-main">
           <div class="queue-title">Очередь пуста</div>
-          <div class="queue-request">Новые клиенты скоро появятся.</div>
+          <div class="queue-request">Ожидание новых клиентов.</div>
         </div>
         <div class="queue-meta">—</div>
       </div>
@@ -110,13 +174,19 @@ function renderQueue() {
     return;
   }
 
-  queue.forEach((client, index) => {
+  state.queue.forEach((client, index) => {
+    const badge = client.status === "VIP"
+      ? `<span class="vip-badge">VIP</span>`
+      : client.status === "Премиум"
+      ? `<span class="vip-badge">PREMIUM</span>`
+      : "";
+
     const item = document.createElement("div");
     item.className = "queue-item";
     item.innerHTML = `
       <div class="queue-main">
-        <div class="queue-title">${index + 1}. ${client.name}</div>
-        <div class="queue-request">${getRequestText(client)}</div>
+        <div class="queue-title">${index + 1}. ${client.name} ${badge}</div>
+        <div class="queue-request">${getClientRequestText(client)}</div>
       </div>
       <div class="queue-meta">Терпение: ${client.patience}s</div>
     `;
@@ -124,142 +194,164 @@ function renderQueue() {
   });
 }
 
-function renderClient() {
-  if (!currentClient) {
+function renderCurrentClient() {
+  if (!state.currentClient) {
     clientPanelEl.className = "client-panel empty";
     clientPanelEl.innerHTML = `
       <div class="empty-title">Нет клиента у окна</div>
-      <div class="empty-text">Ожидание следующего клиента.</div>
+      <div class="empty-text">Нажмите «Старт», чтобы начать симуляцию.</div>
     `;
     decisionTimerEl.textContent = "—";
     serviceTimerEl.textContent = "—";
     return;
   }
 
+  const client = state.currentClient;
+  const amountText =
+    client.operation === "balance"
+      ? "Не требуется"
+      : client.operation === "fx"
+      ? `${client.amount} ${client.currency}`
+      : `${client.amount} ₽`;
+
   clientPanelEl.className = "client-panel";
   clientPanelEl.innerHTML = `
-    <div class="client-title">${currentClient.name}</div>
-    <div class="client-request">${getRequestText(currentClient)}</div>
+    <div class="client-title">${client.name}</div>
+    <div class="client-request">${getClientRequestText(client)}</div>
 
     <div class="client-data">
       <div class="data-box">
         <span>Статус</span>
-        <strong>${currentClient.status}</strong>
+        <strong>${client.status}</strong>
       </div>
 
       <div class="data-box">
         <span>Операция</span>
-        <strong>${operations[currentClient.operation]}</strong>
+        <strong>${OPERATIONS[client.operation].title}</strong>
       </div>
 
       <div class="data-box">
         <span>Сумма</span>
-        <strong>${currentClient.amount} ₽</strong>
+        <strong>${amountText}</strong>
       </div>
 
       <div class="data-box">
-        <span>ID клиента</span>
-        <strong>#${currentClient.id}</strong>
+        <span>Ожидание</span>
+        <strong>${state.simTime - client.createdAt}s</strong>
       </div>
     </div>
   `;
 
-  decisionTimerEl.textContent = `${currentClient.decisionTime}s`;
-  serviceTimerEl.textContent = `${currentClient.patience}s`;
+  decisionTimerEl.textContent = `${client.decisionTime}s`;
+  serviceTimerEl.textContent = `${client.patience}s`;
 }
 
 function renderAll() {
   renderQueue();
-  renderClient();
+  renderCurrentClient();
   updateStats();
 }
 
-function addClientToQueue() {
-  const client = createClient();
-  queue.push(client);
-  if (queue.length > maxQueue) maxQueue = queue.length;
-  addLog(`В очередь добавлен клиент ${client.name}`, "warn");
+function spawnClientIfNeeded() {
+  if (state.spawnCooldown > 0) {
+    state.spawnCooldown--;
+    return;
+  }
+
+  const canSpawn = state.queue.length < 5;
+  if (!canSpawn) return;
+
+  if (Math.random() < 0.7 || state.queue.length === 0) {
+    const client = createClient();
+    state.queue.push(client);
+    state.arrived++;
+    state.maxQueue = Math.max(state.maxQueue, state.queue.length);
+    state.spawnCooldown = randomInt(2, 4);
+    addLog(`Пришёл клиент: ${client.name}`, "warn");
+  }
 }
 
 function bringNextClient() {
-  if (!currentClient && queue.length > 0) {
-    currentClient = queue.shift();
-    addLog(`Клиент ${currentClient.name} подошёл к окну`, "success");
+  if (!state.currentClient && state.queue.length > 0) {
+    state.currentClient = state.queue.shift();
+    addLog(`К окну подошёл клиент: ${state.currentClient.name}`, "success");
   }
 }
 
-function processQueue() {
-  const newQueue = [];
+function processQueuePatience() {
+  const updatedQueue = [];
 
-  queue.forEach((client) => {
+  state.queue.forEach((client) => {
     client.patience--;
 
     if (client.patience <= 0) {
-      mistakes++;
-      addLog(`Клиент ${client.name} не дождался и ушёл`, "error");
+      state.left++;
+      state.failed++;
+      state.mistakes++;
+      addLog(`Клиент ${client.name} ушёл из очереди`, "error");
     } else {
-      newQueue.push(client);
+      updatedQueue.push(client);
     }
   });
 
-  queue = newQueue;
-}
+  state.queue = updatedQueue;
 
-function processCurrentClient() {
-  if (!currentClient) return;
+  if (state.currentClient) {
+    state.currentClient.decisionTime--;
+    state.currentClient.patience--;
 
-  currentClient.decisionTime--;
-  currentClient.patience--;
-
-  if (currentClient.decisionTime <= 0 || currentClient.patience <= 0) {
-    mistakes++;
-    addLog(`Время клиента ${currentClient.name} истекло`, "error");
-    currentClient = null;
+    if (state.currentClient.decisionTime <= 0 || state.currentClient.patience <= 0) {
+      state.failed++;
+      state.mistakes++;
+      addLog(`Клиент ${state.currentClient.name} не был обслужен вовремя`, "error");
+      state.currentClient = null;
+    }
   }
 }
 
-function tick() {
-  if (!gameRunning) return;
+function handleAction(op) {
+  if (!state.running || !state.currentClient) return;
 
-  simTime++;
+  const client = state.currentClient;
+  const waitTime = state.simTime - client.createdAt;
 
-  if (Math.random() < 0.7 && queue.length < 5) {
-    addClientToQueue();
+  if (op === client.operation) {
+    const bonus = client.status === "VIP" ? 15 : client.status === "Премиум" ? 12 : 10;
+    state.score += bonus;
+    state.served++;
+    state.totalWait += waitTime;
+    addLog(`Клиент ${client.name} обслужен правильно`, "success");
+  } else {
+    state.score = Math.max(0, state.score - 5);
+    state.failed++;
+    state.mistakes++;
+    addLog(`Ошибка: неправильная операция для ${client.name}`, "error");
   }
 
-  processQueue();
-  processCurrentClient();
+  state.currentClient = null;
   bringNextClient();
   renderAll();
 }
 
-function handleAction(op) {
-  if (!gameRunning || !currentClient) return;
-
-  if (op === currentClient.operation) {
-    score += 10;
-    addLog(`Клиент ${currentClient.name} обслужен правильно`, "success");
-  } else {
-    mistakes++;
-    score = Math.max(0, score - 5);
-    addLog(`Неверная операция для клиента ${currentClient.name}`, "error");
-  }
-
-  currentClient = null;
+function tick() {
+  if (!state.running) return;
+  state.simTime++;
+  spawnClientIfNeeded();
+  processQueuePatience();
   bringNextClient();
   renderAll();
 }
 
 function startGame() {
-  if (gameRunning) return;
-  gameRunning = true;
+  if (state.running) return;
+  state.running = true;
 
-  if (!timerId) {
-    timerId = setInterval(tick, 1000);
+  if (!state.intervalId) {
+    state.intervalId = setInterval(tick, 1000);
   }
 
-  if (queue.length === 0 && !currentClient) {
-    addClientToQueue();
+  if (state.queue.length === 0 && !state.currentClient) {
+    spawnClientIfNeeded();
     bringNextClient();
   }
 
@@ -268,20 +360,28 @@ function startGame() {
 }
 
 function pauseGame() {
-  gameRunning = false;
-  addLog("Симуляция на паузе", "warn");
+  state.running = false;
+  addLog("Симуляция поставлена на паузу", "warn");
   renderAll();
 }
 
 function resetGame() {
-  gameRunning = false;
-  simTime = 0;
-  queue = [];
-  currentClient = null;
-  maxQueue = 0;
-  nextId = 1;
-  score = 0;
-  mistakes = 0;
+  state.running = false;
+  state.simTime = 0;
+  state.queue = [];
+  state.currentClient = null;
+  state.nextId = 1;
+  state.maxQueue = 0;
+  state.spawnCooldown = 0;
+
+  state.score = 0;
+  state.mistakes = 0;
+  state.arrived = 0;
+  state.served = 0;
+  state.failed = 0;
+  state.left = 0;
+  state.totalWait = 0;
+
   logListEl.innerHTML = "";
   addLog("Симуляция сброшена", "warn");
   renderAll();
