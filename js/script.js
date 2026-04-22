@@ -6,6 +6,7 @@ const mistakesEl = document.getElementById("mistakes");
 const scoreEl = document.getElementById("score");
 const decisionTimerEl = document.getElementById("decisionTimer");
 const serviceTimerEl = document.getElementById("serviceTimer");
+const queueListEl = document.getElementById("queueList");
 const clientPanelEl = document.getElementById("clientPanel");
 const logListEl = document.getElementById("logList");
 
@@ -14,6 +15,7 @@ const pauseBtn = document.getElementById("pauseBtn");
 const resetBtn = document.getElementById("resetBtn");
 const actionButtons = document.querySelectorAll(".action-btn");
 
+const names = ["Иван", "Анна", "Сергей", "Мария", "Олег", "Елена", "Максим", "Виктория"];
 const operations = {
   withdraw: "Снятие",
   deposit: "Пополнение",
@@ -23,12 +25,15 @@ const operations = {
   balance: "Баланс"
 };
 
-const names = ["Иван", "Анна", "Сергей", "Мария", "Олег", "Елена"];
-
 let gameRunning = false;
 let simTime = 0;
 let timerId = null;
+
+let queue = [];
 let currentClient = null;
+let maxQueue = 0;
+let nextId = 1;
+
 let score = 0;
 let mistakes = 0;
 
@@ -37,19 +42,20 @@ function randomItem(arr) {
 }
 
 function randomOperation() {
-  const keys = Object.keys(operations);
-  return randomItem(keys);
+  return randomItem(Object.keys(operations));
 }
 
 function createClient() {
-  const op = randomOperation();
-  const amount = Math.floor(Math.random() * 9000) + 1000;
+  const operation = randomOperation();
 
   return {
+    id: nextId++,
     name: randomItem(names),
-    operation: op,
-    amount: amount,
-    status: "Обычный"
+    operation,
+    amount: Math.floor(Math.random() * 9000) + 1000,
+    status: "Обычный",
+    patience: Math.floor(Math.random() * 8) + 8,
+    decisionTime: Math.floor(Math.random() * 5) + 5
   };
 }
 
@@ -72,12 +78,58 @@ function getRequestText(client) {
   }
 }
 
+function addLog(text, type = "") {
+  const item = document.createElement("div");
+  item.className = `log-item ${type}`.trim();
+  item.textContent = `[${simTime}s] ${text}`;
+  logListEl.prepend(item);
+}
+
+function updateStats() {
+  gameStatusEl.textContent = gameRunning ? "Работа" : "Пауза";
+  simTimeEl.textContent = simTime;
+  queueCountEl.textContent = queue.length;
+  maxQueueEl.textContent = maxQueue;
+  mistakesEl.textContent = mistakes;
+  scoreEl.textContent = score;
+}
+
+function renderQueue() {
+  queueListEl.innerHTML = "";
+
+  if (queue.length === 0) {
+    queueListEl.innerHTML = `
+      <div class="queue-item">
+        <div class="queue-main">
+          <div class="queue-title">Очередь пуста</div>
+          <div class="queue-request">Новые клиенты скоро появятся.</div>
+        </div>
+        <div class="queue-meta">—</div>
+      </div>
+    `;
+    return;
+  }
+
+  queue.forEach((client, index) => {
+    const item = document.createElement("div");
+    item.className = "queue-item";
+    item.innerHTML = `
+      <div class="queue-main">
+        <div class="queue-title">${index + 1}. ${client.name}</div>
+        <div class="queue-request">${getRequestText(client)}</div>
+      </div>
+      <div class="queue-meta">Терпение: ${client.patience}s</div>
+    `;
+    queueListEl.appendChild(item);
+  });
+}
+
 function renderClient() {
   if (!currentClient) {
     clientPanelEl.className = "client-panel empty";
     clientPanelEl.innerHTML = `
       <div class="empty-title">Нет клиента у окна</div>
-      <div class="empty-text">Нажмите «Старт», чтобы начать симуляцию.</div>
+      <div class="empty-text">Ожидание следующего клиента.</div>
     `;
     decisionTimerEl.textContent = "—";
     serviceTimerEl.textContent = "—";
@@ -106,81 +158,79 @@ function renderClient() {
       </div>
 
       <div class="data-box">
-        <span>Комментарий</span>
-        <strong>Ожидает обслуживание</strong>
+        <span>ID клиента</span>
+        <strong>#${currentClient.id}</strong>
       </div>
     </div>
   `;
 
-  decisionTimerEl.textContent = "∞";
-  serviceTimerEl.textContent = "∞";
+  decisionTimerEl.textContent = `${currentClient.decisionTime}s`;
+  serviceTimerEl.textContent = `${currentClient.patience}s`;
 }
 
-function addLog(text, type = "") {
-  const item = document.createElement("div");
-  item.className = `log-item ${type}`.trim();
-  item.textContent = `[${simTime}s] ${text}`;
-  logListEl.prepend(item);
-}
-
-function updateStats() {
-  gameStatusEl.textContent = gameRunning ? "Работа" : "Пауза";
-  simTimeEl.textContent = simTime;
-  queueCountEl.textContent = currentClient ? 1 : 0;
-  maxQueueEl.textContent = currentClient ? 1 : 0;
-  mistakesEl.textContent = mistakes;
-  scoreEl.textContent = score;
-}
-
-function spawnClient() {
-  currentClient = createClient();
-  addLog(`Новый клиент: ${currentClient.name}`, "warn");
+function renderAll() {
+  renderQueue();
   renderClient();
   updateStats();
+}
+
+function addClientToQueue() {
+  const client = createClient();
+  queue.push(client);
+  if (queue.length > maxQueue) maxQueue = queue.length;
+  addLog(`В очередь добавлен клиент ${client.name}`, "warn");
+}
+
+function bringNextClient() {
+  if (!currentClient && queue.length > 0) {
+    currentClient = queue.shift();
+    addLog(`Клиент ${currentClient.name} подошёл к окну`, "success");
+  }
+}
+
+function processQueue() {
+  const newQueue = [];
+
+  queue.forEach((client) => {
+    client.patience--;
+
+    if (client.patience <= 0) {
+      mistakes++;
+      addLog(`Клиент ${client.name} не дождался и ушёл`, "error");
+    } else {
+      newQueue.push(client);
+    }
+  });
+
+  queue = newQueue;
+}
+
+function processCurrentClient() {
+  if (!currentClient) return;
+
+  currentClient.decisionTime--;
+  currentClient.patience--;
+
+  if (currentClient.decisionTime <= 0 || currentClient.patience <= 0) {
+    mistakes++;
+    addLog(`Время клиента ${currentClient.name} истекло`, "error");
+    currentClient = null;
+  }
 }
 
 function tick() {
   if (!gameRunning) return;
+
   simTime++;
-  updateStats();
 
-  if (!currentClient) {
-    spawnClient();
-  }
-}
-
-function startGame() {
-  if (gameRunning) return;
-  gameRunning = true;
-
-  if (!timerId) {
-    timerId = setInterval(tick, 1000);
+  if (Math.random() < 0.7 && queue.length < 5) {
+    addClientToQueue();
   }
 
-  if (!currentClient) {
-    spawnClient();
-  }
-
-  addLog("Игра запущена", "success");
-  updateStats();
-}
-
-function pauseGame() {
-  gameRunning = false;
-  addLog("Игра поставлена на паузу", "warn");
-  updateStats();
-}
-
-function resetGame() {
-  gameRunning = false;
-  simTime = 0;
-  currentClient = null;
-  score = 0;
-  mistakes = 0;
-  logListEl.innerHTML = "";
-  renderClient();
-  updateStats();
-  addLog("Игра сброшена", "warn");
+  processQueue();
+  processCurrentClient();
+  bringNextClient();
+  renderAll();
 }
 
 function handleAction(op) {
@@ -191,12 +241,50 @@ function handleAction(op) {
     addLog(`Клиент ${currentClient.name} обслужен правильно`, "success");
   } else {
     mistakes++;
-    addLog(`Ошибка при обслуживании клиента ${currentClient.name}`, "error");
+    score = Math.max(0, score - 5);
+    addLog(`Неверная операция для клиента ${currentClient.name}`, "error");
   }
 
   currentClient = null;
-  renderClient();
-  updateStats();
+  bringNextClient();
+  renderAll();
+}
+
+function startGame() {
+  if (gameRunning) return;
+  gameRunning = true;
+
+  if (!timerId) {
+    timerId = setInterval(tick, 1000);
+  }
+
+  if (queue.length === 0 && !currentClient) {
+    addClientToQueue();
+    bringNextClient();
+  }
+
+  addLog("Симуляция запущена", "success");
+  renderAll();
+}
+
+function pauseGame() {
+  gameRunning = false;
+  addLog("Симуляция на паузе", "warn");
+  renderAll();
+}
+
+function resetGame() {
+  gameRunning = false;
+  simTime = 0;
+  queue = [];
+  currentClient = null;
+  maxQueue = 0;
+  nextId = 1;
+  score = 0;
+  mistakes = 0;
+  logListEl.innerHTML = "";
+  addLog("Симуляция сброшена", "warn");
+  renderAll();
 }
 
 startBtn.addEventListener("click", startGame);
@@ -204,10 +292,7 @@ pauseBtn.addEventListener("click", pauseGame);
 resetBtn.addEventListener("click", resetGame);
 
 actionButtons.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    handleAction(btn.dataset.op);
-  });
+  btn.addEventListener("click", () => handleAction(btn.dataset.op));
 });
 
-renderClient();
-updateStats();
+renderAll();
