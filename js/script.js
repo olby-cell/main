@@ -76,6 +76,9 @@ const state = {
   intervalId: null
 };
 
+function formatTime(t) {
+  return `${t}s`;
+}
 function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -130,7 +133,7 @@ function getClientRequestText(client) {
 function addLog(text, type = "") {
   const item = document.createElement("div");
   item.className = `log-item ${type}`.trim();
-  item.textContent = `[${state.simTime}s] ${text}`;
+  item.textContent = `[${formatTime(state.simTime)}] ${text}`;
   logListEl.prepend(item);
 
   while (logListEl.children.length > 40) {
