@@ -230,7 +230,7 @@ function renderCurrentClient() {
 
       <div class="data-box">
         <span>Операция</span>
-        <strong>${OPERATIONS[client.operation].title}</strong>
+        <strong>${OPERATIONS[client.operation].title.toUpperCase()}</strong>
       </div>
 
       <div class="data-box">
