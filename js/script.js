@@ -222,6 +222,8 @@ function renderCurrentClient() {
     <div class="client-title">${client.name}</div>
     <div class="client-request">${getClientRequestText(client)}</div>
 
+
+    
     <div class="client-data">
       <div class="data-box">
         <span>Статус</span>
