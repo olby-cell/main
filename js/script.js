@@ -403,5 +403,30 @@ resetBtn.addEventListener("click", resetGame);
 actionButtons.forEach((btn) => {
   btn.addEventListener("click", () => handleAction(btn.dataset.op));
 });
+function loadProducts() {
+  const productsList = document.getElementById("productsList");
+  if (!productsList) return;
 
+  fetch("data/products.json")
+    .then(response => response.json())
+    .then(products => {
+      productsList.innerHTML = "";
+
+      products.forEach(product => {
+        const card = document.createElement("div");
+        card.className = "product-card";
+        card.innerHTML = `
+          <h3>${product.title}</h3>
+          <p>${product.description}</p>
+        `;
+
+        productsList.appendChild(card);
+      });
+    })
+    .catch(() => {
+      productsList.textContent = "Не удалось загрузить данные.";
+    });
+}
+
+loadProducts();
 renderAll();

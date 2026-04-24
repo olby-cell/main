@@ -344,4 +344,74 @@ button.danger{
   .dashboard{
     padding:16px;
   }
+  .auth-page {
+  min-height: 100vh;
+  background: #eaf6ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Arial, sans-serif;
+}
+
+.auth-box {
+  width: 360px;
+  background: white;
+  padding: 28px;
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.auth-box h1,
+.auth-box h2 {
+  margin: 0 0 16px;
+  color: #0b3d63;
+}
+
+.auth-box input {
+  width: 100%;
+  padding: 11px;
+  margin-bottom: 12px;
+  border: 1px solid #c7ddeb;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+
+.auth-box button {
+  width: 100%;
+  padding: 11px;
+  border: none;
+  border-radius: 10px;
+  background: #69b7e6;
+  color: white;
+  cursor: pointer;
+}
+
+.auth-box a {
+  display: block;
+  margin-top: 14px;
+  color: #0b3d63;
+  text-decoration: none;
+}
+
+.success {
+  color: green;
+}
+
+.error {
+  color: red;
+}
+
+.products-section {
+  margin: 24px;
+  padding: 18px;
+  background: white;
+  border-radius: 16px;
+}
+
+.product-card {
+  padding: 12px;
+  margin: 10px 0;
+  border: 1px solid #c7ddeb;
+  border-radius: 12px;
+}
 }
