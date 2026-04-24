@@ -1,5 +1,6 @@
 function getUsers() {
-  return JSON.parse(localStorage.getItem("bankflowUsers")) || [];
+  const users = localStorage.getItem("bankflowUsers");
+  return users ? JSON.parse(users) : [];
 }
 
 function saveUsers(users) {
