@@ -1,3 +1,9 @@
+const currentUser = JSON.parse(localStorage.getItem("bankflowCurrentUser"));
+
+if (!currentUser) {
+  window.location.href = "login.html";
+}
+
 const gameStatusEl = document.getElementById("gameStatus");
 const simTimeEl = document.getElementById("simTime");
 const queueCountEl = document.getElementById("queueCount");
@@ -20,15 +26,18 @@ const ratingEl = document.getElementById("rating");
 const startBtn = document.getElementById("startBtn");
 const pauseBtn = document.getElementById("pauseBtn");
 const resetBtn = document.getElementById("resetBtn");
+const logoutBtn = document.getElementById("logoutBtn");
 const actionButtons = document.querySelectorAll(".action-btn");
-const currentUser = JSON.parse(localStorage.getItem("bankflowCurrentUser"));
 
-if (!currentUser) {
-  window.location.href = "login.html";
-}
 const CLIENT_NAMES = [
-  "Иван Петров", "Анна Соколова", "Дмитрий Орлов", "Мария Коваль",
-  "Алексей Романюк", "Ольга Новик", "Сергей Мельник", "Елена Васильева"
+  "Иван Петров",
+  "Анна Соколова",
+  "Дмитрий Орлов",
+  "Мария Коваль",
+  "Алексей Романюк",
+  "Ольга Новик",
+  "Сергей Мельник",
+  "Елена Васильева"
 ];
 
 const OPERATIONS = {
@@ -54,7 +63,7 @@ const OPERATIONS = {
   },
   balance: {
     title: "Баланс",
-    request: () => `Клиент хочет проверить баланс счёта`
+    request: () => "Клиент хочет проверить баланс счёта"
   }
 };
 
@@ -80,9 +89,10 @@ const state = {
   intervalId: null
 };
 
-function formatTime(t) {
-  return `${t}s`;
+function formatTime(time) {
+  return `${time}s`;
 }
+
 function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -125,12 +135,15 @@ function createClient() {
 
 function getClientRequestText(client) {
   if (!client) return "";
+
   if (client.operation === "fx") {
     return OPERATIONS[client.operation].request(client.amount, client.currency);
   }
+
   if (client.operation === "balance") {
     return OPERATIONS[client.operation].request();
   }
+
   return OPERATIONS[client.operation].request(client.amount);
 }
 
@@ -197,6 +210,7 @@ function renderQueue() {
       </div>
       <div class="queue-meta">Терпение: ${client.patience}s</div>
     `;
+
     queueListEl.appendChild(item);
   });
 }
@@ -208,12 +222,14 @@ function renderCurrentClient() {
       <div class="empty-title">Нет клиента у окна</div>
       <div class="empty-text">Нажмите «Старт», чтобы начать симуляцию.</div>
     `;
+
     decisionTimerEl.textContent = "—";
     serviceTimerEl.textContent = "—";
     return;
   }
 
   const client = state.currentClient;
+
   const amountText =
     client.operation === "balance"
       ? "Не требуется"
@@ -226,8 +242,6 @@ function renderCurrentClient() {
     <div class="client-title">${client.name}</div>
     <div class="client-request">${getClientRequestText(client)}</div>
 
-
-    
     <div class="client-data">
       <div class="data-box">
         <span>Статус</span>
@@ -267,8 +281,7 @@ function spawnClientIfNeeded() {
     return;
   }
 
-  const canSpawn = state.queue.length < 5;
-  if (!canSpawn) return;
+  if (state.queue.length >= 5) return;
 
   if (Math.random() < 0.7 || state.queue.length === 0) {
     const client = createClient();
@@ -344,6 +357,7 @@ function handleAction(op) {
 
 function tick() {
   if (!state.running) return;
+
   state.simTime++;
   spawnClientIfNeeded();
   processQueuePatience();
@@ -353,6 +367,7 @@ function tick() {
 
 function startGame() {
   if (state.running) return;
+
   state.running = true;
 
   if (!state.intervalId) {
@@ -396,23 +411,21 @@ function resetGame() {
   renderAll();
 }
 
-startBtn.addEventListener("click", startGame);
-pauseBtn.addEventListener("click", pauseGame);
-resetBtn.addEventListener("click", resetGame);
+function logout() {
+  localStorage.removeItem("bankflowCurrentUser");
+  window.location.href = "login.html";
+}
 
-actionButtons.forEach((btn) => {
-  btn.addEventListener("click", () => handleAction(btn.dataset.op));
-});
 function loadProducts() {
   const productsList = document.getElementById("productsList");
   if (!productsList) return;
 
-  fetch("data/products.json")
-    .then(response => response.json())
-    .then(products => {
+  fetch("./data/products.json")
+    .then((response) => response.json())
+    .then((products) => {
       productsList.innerHTML = "";
 
-      products.forEach(product => {
+      products.forEach((product) => {
         const card = document.createElement("div");
         card.className = "product-card";
         card.innerHTML = `
@@ -424,9 +437,21 @@ function loadProducts() {
       });
     })
     .catch(() => {
-      productsList.textContent = "Не удалось загрузить данные.";
+      productsList.textContent = "Не удалось загрузить данные из JSON.";
     });
 }
+
+startBtn.addEventListener("click", startGame);
+pauseBtn.addEventListener("click", pauseGame);
+resetBtn.addEventListener("click", resetGame);
+
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", logout);
+}
+
+actionButtons.forEach((btn) => {
+  btn.addEventListener("click", () => handleAction(btn.dataset.op));
+});
 
 loadProducts();
 renderAll();
