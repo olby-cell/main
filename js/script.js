@@ -21,7 +21,11 @@ const startBtn = document.getElementById("startBtn");
 const pauseBtn = document.getElementById("pauseBtn");
 const resetBtn = document.getElementById("resetBtn");
 const actionButtons = document.querySelectorAll(".action-btn");
+const currentUser = JSON.parse(localStorage.getItem("bankflowCurrentUser"));
 
+if (!currentUser) {
+  window.location.href = "login.html";
+}
 const CLIENT_NAMES = [
   "Иван Петров", "Анна Соколова", "Дмитрий Орлов", "Мария Коваль",
   "Алексей Романюк", "Ольга Новик", "Сергей Мельник", "Елена Васильева"
